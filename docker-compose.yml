@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  spch2txt-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spch2txt-server
+    ports:
+      - "5001:5001"
+    environment:
+      # API Keys (REQUIRED - set these in .env file)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
+      
+      # API Endpoints (optional)
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:5001}
+      - LLM_API_BASE_URL=${LLM_API_BASE_URL:-https://api.openai.com/v1}
+      
+      # Model Configuration (optional)
+      - LLM_MODEL=${LLM_MODEL:-gpt-4o}
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - DIARIZATION_MODEL=${DIARIZATION_MODEL:-pyannote/speaker-diarization-3.1}
+      
+      # Offline Mode (optional - set to 1 to disable internet access for models)
+      - HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-0}
+      - HF_HUB_CACHE=${HF_HUB_CACHE:-/root/.cache/huggingface}
+      - XDG_CACHE_HOME=${XDG_CACHE_HOME:-/root/.cache}
+      
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-WARNING}
+    
+    volumes:
+      # Persist output files
+      - ./src/saved_audio:/app/src/saved_audio
+      - ./src/saved_transcripts:/app/src/saved_transcripts
+      - ./src/saved_summary:/app/src/saved_summary
+      
+      # Cache HuggingFace models (for offline use)
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      
+      # Cache OpenAI Whisper models (for offline use)
+      - ~/.cache/whisper:/root/.cache/whisper
+      
+      # Optional: Use custom model cache location
+      # - ./models:/app/models
+    
+    restart: unless-stopped
+    
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+networks:
+  default:
+    name: spch2txt-network

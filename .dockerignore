@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+
+# Test files
+tests/
+*.test.py
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Output directories (will be created in container)
+src/saved_audio/*
+src/saved_transcripts/*
+src/saved_summary/*
+
+# Poetry
+poetry.lock
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+
+# Cache directories
+.cache/
+.pytest_cache/
+.ruff_cache/
+
+# Logs
+*.log

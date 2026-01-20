@@ -1,0 +1,26 @@
+.vscode/
+.qodo/
+.qodo_helper/
+
+src/saved_audio/*
+!src/saved_audio/.gitkeep
+
+src/saved_transcripts/*
+!src/saved_transcripts/.gitkeep
+
+src/saved_summary/*
+!src/saved_summary/.gitkeep
+
+TODO.md
+
+__pycache__/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.key
+secrets.json
+
+server_jobs/
+models/

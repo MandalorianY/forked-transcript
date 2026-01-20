@@ -1,0 +1,5 @@
+[flake8]
+# Disable flake8 entirely - we use ruff instead
+ignore = *
+exclude = *
+per-file-ignores = *:*

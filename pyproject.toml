@@ -1,0 +1,63 @@
+[project]
+name = "spch2txt"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Yonah Bole",email = "80701265+Nayrobie@users.noreply.github.com"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "ruff>=0.13.3,<0.14.0",
+    "sounddevice>=0.5.2,<0.6.0",
+    "pyaudio>=0.2.11; sys_platform != 'win32'",
+    "pyaudiowpatch>=0.2.12.7,<0.3.0.0; sys_platform == 'win32'",
+    "streamlit>=1.50.0,<2.0.0",
+    "openai-whisper>=20250625,<20250626",
+    "st-copy>=1.1.2,<2.0.0",
+    "ffmpeg-python>=0.2.0,<0.3.0",
+    "pyannote-audio==3.1.1",
+    "huggingface-hub>=0.16.0,<1.0.0",
+    "transformers>=4.30.0,<5.0.0",
+    "numpy>=1.24.0,<2.0.0",
+    "python-dotenv>=1.1.1,<2.0.0",
+    "torch==2.8.*",
+    "ffmpeg<8",
+    "torchaudio==2.8.*",
+    "matplotlib>=3.10.7,<4.0.0",
+    "openai>=2.6.0,<3.0.0",
+    "flask>=3.0.0,<4.0.0",
+    "flask-cors>=5.0.0,<6.0.0",
+    "werkzeug>=3.0.0,<4.0.0",
+    "requests>=2.32.0,<3.0.0",
+    "watchdog>=4.0.0,<5.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",  # Line too long (handled by line-length setting)
+    "W291",  # Trailing whitespace
+    "W292",  # No newline at end of file
+    "W293",  # Blank line contains whitespace
+    "E402",  # Module level import not at top of file (sometimes needed)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.poetry]
+package-mode = false
