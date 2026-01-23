@@ -12,8 +12,8 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from queue import Empty, Queue
 from typing import Any, Dict, Optional
 
-from .job_manager import JobManager, JobStage
-from .processor import AudioProcessor
+from src.server.job_manager import JobManager, JobStage
+from src.server.processor import AudioProcessor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

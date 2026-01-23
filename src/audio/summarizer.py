@@ -1,20 +1,5 @@
-"""
-Meeting summarization functionality using OpenAI API.
-
-This module provides meeting summarization capabilities using OpenAI's GPT models.
-Uses lazy loading to avoid unnecessary API initialization during module import.
-
-Key features:
-- Lazy loading of OpenAI client to avoid conflicts during initialization
-- Configurable model selection (GPT-4, GPT-4o-mini, etc.)
-- Structured meeting minutes generation from transcripts
-- Topic-based summarization with decisions and action items
-
-Important: OpenAI client is initialized only when first needed to prevent
-unnecessary API calls and allow for flexible configuration.
-"""
-
 from typing import Optional
+from src.server.job_manager import JobManager, JobFailureHandler
 
 
 class MeetingSummarizer:
@@ -26,18 +11,24 @@ class MeetingSummarizer:
     to avoid unnecessary API initialization.
     """
 
-    def __init__(self, api_key: str, model: str = "gpt-4", base_url: str = None):
+    def __init__(
+        self, api_key: str, job_id: str, model: str = "gpt-4", base_url: str = None, job_manager: JobManager = None
+    ):
         """
         Initialize summarizer with OpenAI API key.
 
         Args:
             api_key: OpenAI API authentication key
+            job_id: The job ID to update on failure
             model: OpenAI model to use (default: "gpt-4")
             base_url: Custom API base URL (optional, for OpenAI-compatible APIs)
+            job_manager: The job manager used to track job status (must be passed)
         """
         self.api_key = api_key
+        self.job_id = job_id
         self.model = model
         self.base_url = base_url
+        self.job_manager = job_manager
         self.client = None
         self._client_loaded = False
 
@@ -54,28 +45,28 @@ class MeetingSummarizer:
 
         try:
             # Import OpenAI ONLY when loading client (not at module import time)
-            from openai import OpenAI
+            import openai
 
             print("Loading OpenAI client...")
             # Initialize with custom base_url if provided
             if self.base_url:
-                self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+                self.client = openai.OpenAI(api_key=self.api_key, base_url=self.base_url)
                 print(f"✓ OpenAI client loaded with custom base URL: {self.base_url} (model: {self.model})")
             else:
-                self.client = OpenAI(api_key=self.api_key)
+                self.client = openai.OpenAI(api_key=self.api_key)
                 print(f"✓ OpenAI client loaded (model: {self.model})")
             self._client_loaded = True
         except Exception as e:
             self.client = None
             self._client_loaded = False
-            print(f"⚠ OpenAI client failed to load: {e}")
+            JobFailureHandler.handle_failure(self.job_id, f"Failed to load OpenAI client: {e}", self.job_manager)
 
     def summarize(self, transcript_text: str) -> Optional[str]:
         """
         Generate meeting summary from transcript text.
 
         Creates structured meeting minutes organized by topic, including
-        key decisions and action items. Uses OpenAI's chat completion API
+        key decisions and next actions. Uses OpenAI's chat completion API
         to generate natural, concise summaries.
 
         Args:
@@ -88,11 +79,13 @@ class MeetingSummarizer:
             self._load_client()
 
         if not self.client:
-            print("⚠ OpenAI client not available")
+            error_message = "OpenAI client not available"
+            JobFailureHandler.handle_failure(self.job_id, error_message, self.job_manager)
             return None
 
         if not transcript_text or transcript_text.strip() == "":
-            print("⚠ Empty transcript provided")
+            error_message = "Empty transcript provided"
+            JobFailureHandler.handle_failure(self.job_id, error_message, self.job_manager)
             return None
 
         try:
@@ -119,11 +112,12 @@ Transcript:
             return summary
 
         except Exception as e:
-            print(f"⚠ Summarization failed: {e}")
+            error_message = f"Summarization failed: {e}"
+            JobFailureHandler.handle_failure(self.job_id, error_message, self.job_manager)
             return None
 
 
-def summarize_transcript(transcript_text: str, api_key: str, model: str = "gpt-4") -> Optional[str]:
+def summarize_transcript(transcript_text: str, api_key: str, job_id: str, model: str = "gpt-4") -> Optional[str]:
     """
     Convenience function to summarize a transcript.
 
@@ -133,10 +127,12 @@ def summarize_transcript(transcript_text: str, api_key: str, model: str = "gpt-4
     Args:
         transcript_text: Full transcript text to summarize
         api_key: OpenAI API authentication key
+        job_id: The job ID to track summarization status
         model: OpenAI model to use (default: "gpt-4")
 
     Returns:
         Formatted meeting summary string, or None if summarization fails.
     """
-    summarizer = MeetingSummarizer(api_key=api_key, model=model)
+    job_manager = JobManager("server_jobs")
+    summarizer = MeetingSummarizer(api_key=api_key, job_id=job_id, model=model, job_manager=job_manager)
     return summarizer.summarize(transcript_text)

@@ -1,0 +1,14 @@
+meta {
+  name: List Jobs
+  type: http
+}
+
+get {
+  url: {{baseUrl}}/jobs
+}
+
+params:query {
+  status: 
+  limit: 100
+  offset: 0
+}

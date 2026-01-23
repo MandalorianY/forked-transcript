@@ -22,8 +22,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
-from .job_manager import JobManager, JobStatus
-from .processing_queue import ProcessingQueue
+from src.server.job_manager import JobManager, JobStatus
+from src.server.processing_queue import ProcessingQueue
 
 # Suppress common third-party warnings for cleaner logs
 warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")

@@ -300,11 +300,14 @@ class AudioCapture:
                     num_silence_chunks = int(num_samples / (self.frames_per_buffer * channels_list[i]))
                     frames = [silence_chunk] * num_silence_chunks
 
-                with wave.open(output_file, "wb") as wf:
-                    wf.setnchannels(channels_list[i])
-                    wf.setsampwidth(pa.get_sample_size(pyaudio.paInt16))
-                    wf.setframerate(rates[i])
-                    wf.writeframes(b"".join(frames))
+                try:
+                    with wave.open(output_file, "wb") as wf:
+                        wf.setnchannels(channels_list[i])
+                        wf.setsampwidth(2)  # paInt16 is always 2 bytes
+                        wf.setframerate(rates[i])
+                        wf.writeframes(b"".join(frames))
+                except Exception as e:
+                    print(f"Error writing WAV file {output_file}: {e}")
 
             for stream in streams:
                 try:
@@ -485,7 +488,7 @@ class AudioCapture:
                     # Start recording thread
                     thread = threading.Thread(
                         target=self._record_unlimited_thread,
-                        args=(stream, output_path, rate, actual_channels, None, stop_callback),
+                        args=(stream, output_path, rate, actual_channels, stop_callback),
                     )
                     threads.append(thread)
                     thread.start()
@@ -503,7 +506,7 @@ class AudioCapture:
 
         return successful_output_files
 
-    def _record_unlimited_thread(self, stream, output_path: str, rate: int, channels: int, audio_queue, stop_callback):
+    def _record_unlimited_thread(self, stream, output_path: str, rate: int, channels: int, stop_callback):
         """Record from a stream until stop_callback returns True."""
         frames = []
 
@@ -521,11 +524,14 @@ class AudioCapture:
         finally:
             # Save the recorded audio
             if frames:
-                with wave.open(output_path, "wb") as wf:
-                    wf.setnchannels(channels)
-                    wf.setsampwidth(pyaudio.get_sample_size(pyaudio.paInt16))
-                    wf.setframerate(rate)
-                    wf.writeframes(b"".join(frames))
+                try:
+                    with wave.open(output_path, "wb") as wf:
+                        wf.setnchannels(channels)
+                        wf.setsampwidth(2)  # paInt16 is always 2 bytes
+                        wf.setframerate(rate)
+                        wf.writeframes(b"".join(frames))
+                except Exception as e:
+                    print(f"Error writing WAV file {output_path}: {e}")
 
     def cleanup(self):
         """Clean up audio resources."""

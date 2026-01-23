@@ -1,0 +1,20 @@
+meta {
+  name: Upload Audio
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/upload
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  file: @file(/Users/amaurylange/Code/ab-transcript/output.mp3)
+  options: {{optionsJson}}
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:5001
+}

@@ -1,0 +1,16 @@
+meta {
+  name: Job Status
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/status/{{jobId}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  jobId: 0989e0fd-5a35-4237-bc8f-259a72c3fa11
+  baseUrl: http://localhost:5001
+}

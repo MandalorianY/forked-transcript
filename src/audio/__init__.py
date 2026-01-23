@@ -35,14 +35,10 @@ from .utils import (
     save_audio_array,
 )
 
-# Conditional imports for server-side components
-try:
-    from .diarization import PyannoteDiarizer, assign_speakers_to_segments
-    from .summarizer import MeetingSummarizer, summarize_transcript
-    from .transcription import AudioTranscriber
-except ImportError:
-    # These modules are not available in client-only builds
-    pass
+
+from src.audio.diarization import PyannoteDiarizer, assign_speakers_to_segments
+from src.audio.summarizer import MeetingSummarizer, summarize_transcript
+from src.audio.transcription import AudioTranscriber
 
 
 def __getattr__(name):

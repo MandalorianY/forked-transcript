@@ -1,22 +1,6 @@
-"""
-Speaker diarization functionality using pyannote.audio.
-
-This module provides speaker diarization (identifying who spoke when) using
-pyannote.audio models. Uses lazy loading to avoid conflicts with PyAudio during
-audio recording. The pipeline is only loaded when first needed.
-
-Key features:
-- Lazy loading of pyannote pipeline to avoid audio backend conflicts
-- Speaker identification with timestamps
-- Integration with Whisper transcription segments
-- Overlap-based speaker assignment to transcription segments
-
-Important: All pyannote imports are done inside methods, not at module level,
-to prevent torchaudio from interfering with PyAudio's recording functionality.
-"""
-
 import os
 from typing import List, Optional, Tuple
+from src.server.job_manager import JobManager, JobFailureHandler
 
 
 class PyannoteDiarizer:
@@ -28,7 +12,7 @@ class PyannoteDiarizer:
     audio recording libraries.
     """
 
-    def __init__(self, hf_token: str, model_name: str = "pyannote/speaker-diarization-3.1"):
+    def __init__(self, hf_token: str, job_manager: JobManager, model_name: str = "pyannote/speaker-diarization-3.1"):
         """
         Initialize diarizer with Hugging Face token and model.
 
@@ -36,9 +20,11 @@ class PyannoteDiarizer:
             hf_token: Hugging Face authentication token
             model_name: HuggingFace model ID or local path for diarization model
                        Default: "pyannote/speaker-diarization-3.1"
+            job_manager: The job manager used to track job status (must be passed).
         """
         self.hf_token = hf_token
         self.model_name = model_name
+        self.job_manager = job_manager
         self.pipeline = None
         self._pipeline_loaded = False
 
@@ -47,8 +33,6 @@ class PyannoteDiarizer:
         Load the pyannote diarization pipeline (lazy loading).
 
         Imports pyannote modules only when needed to avoid conflicts with PyAudio.
-        The import at module level would load torchaudio and set a global audio
-        backend that interferes with PyAudio's recording.
         """
         if self._pipeline_loaded:
             return
@@ -75,32 +59,29 @@ class PyannoteDiarizer:
             self._pipeline_loaded = False
             print(f"⚠ Diarization pipeline failed to load ({self.model_name}): {e}")
 
-    def diarize(self, audio_path: str) -> Optional[List[Tuple[float, float, str]]]:
+    def diarize(self, job_id: str, audio_path: str) -> Optional[List[Tuple[float, float, str]]]:
         """
         Perform speaker diarization on an audio file.
 
-        Analyzes the audio to identify different speakers and when they speak.
-        Returns segments with speaker labels that can be matched to transcription
-        segments using timestamps.
-
         Args:
+            job_id: The job ID to update on error.
             audio_path: Path to WAV audio file to analyze
 
         Returns:
-            List of (start_time, end_time, speaker_label) tuples, where speaker_label
-            is typically "SPEAKER_00", "SPEAKER_01", etc. Returns None if diarization
-            fails or empty list if no speakers detected.
+            List of (start_time, end_time, speaker_label) tuples, or None if diarization fails.
         """
         # Lazy load the pipeline on first use
         if not self._pipeline_loaded:
             self._load_pipeline()
 
         if not self.pipeline:
-            print("⚠ Diarization pipeline not available")
+            error_message = "Diarization pipeline not available"
+            JobFailureHandler.handle_failure(job_id, error_message, self.job_manager)
             return None
 
         if not os.path.exists(audio_path):
-            print(f"⚠ Audio file not found: {audio_path}")
+            error_message = f"Audio file not found: {audio_path}"
+            JobFailureHandler.handle_failure(job_id, error_message, self.job_manager)
             return None
 
         try:
@@ -110,7 +91,8 @@ class PyannoteDiarizer:
             # Check if audio file is empty or too small
             file_size = os.path.getsize(audio_path)
             if file_size < 1000:
-                print(f"⚠ Audio file too small for diarization: {audio_path}")
+                error_message = f"Audio file too small for diarization: {audio_path}"
+                JobFailureHandler.handle_failure(job_id, error_message, self.job_manager)
                 return []
 
             with ProgressHook() as hook:
@@ -123,7 +105,8 @@ class PyannoteDiarizer:
                 return segments
 
         except Exception as e:
-            print(f"⚠ Diarization failed for {audio_path}: {e}")
+            error_message = f"Diarization failed for {audio_path}: {e}"
+            JobFailureHandler.handle_failure(job_id, error_message, self.job_manager)
             return None
 
     @staticmethod
@@ -132,10 +115,6 @@ class PyannoteDiarizer:
     ) -> List[dict]:
         """
         Assign speaker labels to Whisper transcription segments using timestamp overlap.
-
-        Matches each transcription segment to a speaker by finding the diarization segment
-        with the most temporal overlap. This combines the text from Whisper with the
-        speaker identification from pyannote.
 
         Args:
             whisper_segments: List of Whisper segments with 'start', 'end', 'text' keys

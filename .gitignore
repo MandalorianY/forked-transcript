@@ -24,3 +24,9 @@ secrets.json
 
 server_jobs/
 models/
+*.wav
+*.mp3
+*.flac
+*.m4a
+
+.DS_Store

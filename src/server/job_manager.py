@@ -432,3 +432,25 @@ class JobManager:
                 return f.read()
         except IOError:
             return None
+
+
+class JobFailureHandler:
+    """
+    Utility class for handling job failures and updating job statuses.
+    This can be used across different classes to avoid duplicating failure handling logic.
+    """
+
+    @staticmethod
+    def handle_failure(job_id: str, error_message: str, job_manager: JobManager):
+        """
+        Handles failures by updating the job status to FAILED and saving the error message.
+
+        Args:
+            job_id: The job ID to update.
+            error_message: The error message to save.
+            job_manager: The job manager instance used to track job status.
+        """
+        if job_manager:
+            job_manager.save_error(job_id, error_message)
+            job_manager.update_status(job_id, JobStatus.FAILED)
+            print(f"Job {job_id} failed: {error_message}")

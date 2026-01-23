@@ -13,8 +13,8 @@ from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 
-from ..audio import AudioTranscriber, MeetingSummarizer, PyannoteDiarizer
-from .job_manager import JobManager, JobStage
+from src.audio import AudioTranscriber, MeetingSummarizer, PyannoteDiarizer
+from src.server import JobManager, JobStage
 
 # Suppress warnings from third-party libraries
 warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
@@ -96,7 +96,7 @@ class AudioProcessor:
 
         # Initialize or refresh transcriber when model changes
         if self.transcriber is None or self.transcriber_model_name != requested_model:
-            self.transcriber = AudioTranscriber(model_name=requested_model)
+            self.transcriber = AudioTranscriber(model_name=requested_model, job_manager=self.job_manager)
             self.transcriber.load_model()
             self.transcriber_model_name = requested_model
             logger.info(f"Loaded Whisper model: {requested_model}")
@@ -104,7 +104,7 @@ class AudioProcessor:
         self.job_manager.update_progress(job_id, 20.0, "Transcribing audio...")
 
         # Perform transcription
-        result = self.transcriber.transcribe(audio_file_path)
+        result = self.transcriber.transcribe(job_id, audio_file_path)
 
         # Extract data
         transcript_text = result.get("text", "")
